@@ -5,7 +5,6 @@ scalaVersion := "2.12.8"
 
 publishMavenStyle := false
 
-libraryDependencies ++= Seq(
-    "com.beachape" %% "enumeratum" % "1.5.13"
-  , "com.beachape" %% "enumeratum-play-json" % "1.5.13"
-)
+scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation")
+
+lazy val `domain-api` = project in file("domain-api")
