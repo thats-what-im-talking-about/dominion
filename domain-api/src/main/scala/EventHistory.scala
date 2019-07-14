@@ -1,4 +1,4 @@
-package twita.bearch
+package twita.bearch.domain.api
 
 import scala.concurrent.Future
 

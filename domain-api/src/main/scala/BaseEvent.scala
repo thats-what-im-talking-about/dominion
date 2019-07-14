@@ -1,4 +1,4 @@
-package twita.bearch
+package twita.bearch.domain.api
 
 /**
   * All of the EventSourced objects in the domain will define a sealed set of events that may be applied
