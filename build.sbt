@@ -1,10 +1,13 @@
+import Dependencies._
+
 name := "be-arch"
-organization := "twita"
-version := "0.1"
-scalaVersion := "2.12.8"
+version := bearchVersion
 
 publishMavenStyle := false
 
 scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation")
 
 lazy val `domain-api` = project in file("domain-api")
+
+lazy val `domain-impl-reactive-mongo` = (project in file("libs/domain-impl-reactive-mongo"))
+  .dependsOn(`domain-api`)
