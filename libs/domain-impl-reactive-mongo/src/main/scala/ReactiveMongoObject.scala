@@ -4,7 +4,6 @@ import java.time.Instant
 
 import reactivemongo.play.json.collection.JSONCollection
 import reactivemongo.play.json.compat._
-import com.typesafe.config.Config
 import play.api.libs.json.Format
 import play.api.libs.json.JsDefined
 import play.api.libs.json.JsObject
@@ -22,22 +21,13 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 
-trait MongoContext {
-  def collectionFt(name: String): Future[JSONCollection]
-  def config: Config
-}
-
 trait BaseDoc[ObjectId] {
   def _id: ObjectId
 }
 
 trait ObjectDescriptor[ObjectId, EventId, A <: EventSourced[A, EventId], D <: BaseDoc[ObjectId]] {
-  protected def moduleName: String
-  protected def context: MongoContext
-  protected def collectionName: String
-  protected def collectionFt: Future[JSONCollection] = context.collectionFt(collectionName)
-  protected lazy val evtCollectionName = s"${moduleName}.events"
-  implicit val config = context.config
+  protected def objCollectionFt: Future[JSONCollection]
+  protected def evtCollectionFt: Future[JSONCollection]
 
   case class Empty[ObjectId](id: ObjectId)
 
@@ -64,26 +54,35 @@ trait ObjectDescriptor[ObjectId, EventId, A <: EventSourced[A, EventId], D <: Ba
 }
 
 trait ReactiveMongoObject[ObjectId, EventId, A <: EventSourced[A, EventId], D <: BaseDoc[ObjectId]]
-  extends ObjectDescriptor[ObjectId, EventId, A, D] {
-
+extends ObjectDescriptor[ObjectId, EventId, A, D]
+{
   implicit def ec: ExecutionContext
   def id: ObjectId = underlying.fold(e => e.id, d => d._id)
   protected def underlying: Either[Empty[ObjectId], D]
-  protected lazy val obj: D = underlying.right.getOrElse(throw new ObjectDeleted(id, collectionName))
-
+  protected lazy val obj: D = underlying.right.getOrElse(throw new ObjectDeleted(id))
   protected lazy val esdOptFt: Future[Option[EventSourcedDoc]] =
-    collectionFt.flatMap(_.find(Json.obj("_id" -> Json.toJson(id)), projection = Some(Json.obj())).one[EventSourcedDoc])
+    objCollectionFt.flatMap(_.find(Json.obj("_id" -> Json.toJson(id)), projection = Some(Json.obj())).one[EventSourcedDoc])
 
   def initialState: Future[A] = esdOptFt.map(esdOpt => cons(Right(esdOpt.get._init)))
 
-  def update[E <: A#AllowedEvent : OWrites](obj: D, event: E, parent: Option[BaseEvent[EventId]]): Future[A] =
-     update(MongoObject.SetOp(Json.toJsObject(obj)), event, parent)
+  def update[E <: A#AllowedEvent : OWrites](
+      obj: D
+    , event: E
+    , parent: Option[BaseEvent[EventId]]
+  ): Future[A] = update(ReactiveMongoObject.SetOp(Json.toJsObject(obj)), event, parent)
 
-  def update[E <: A#AllowedEvent : OWrites](update: MongoObject.SetOp, event: E, parent: Option[BaseEvent[EventId]]): Future[A] =
-    updateVerbose(Json.obj("$set" -> update.json), event, parent)
+  def update[E <: A#AllowedEvent : OWrites](
+      update: ReactiveMongoObject.SetOp
+    , event: E
+    , parent: Option[BaseEvent[EventId]]
+  ): Future[A] = updateVerbose(Json.obj("$set" -> update.json), event, parent)
 
-  def updateVerbose[E <: A#AllowedEvent : OWrites](update: JsObject, event: E, parent: Option[BaseEvent[EventId]],
-                                         discriminator: JsObject = Json.obj("_id" -> Json.toJson(id))): Future[A] = {
+  def updateVerbose[E <: A#AllowedEvent : OWrites](
+      update: JsObject
+    , event: E
+    , parent: Option[BaseEvent[EventId]]
+    , discriminator: JsObject = Json.obj("_id" -> Json.toJson(id))
+  ): Future[A] = {
     // Little helper method that either adds to the $set clause of this update statement if one exists or
     // adds a $set section if one is not present.
     def getUpdateJson(esdOpt: Option[EventSourcedDoc], eventId: EventId) = {
@@ -97,7 +96,7 @@ trait ReactiveMongoObject[ObjectId, EventId, A <: EventSourced[A, EventId], D <:
     {
       for {
         _ <- recordEvent(event, parent)
-        objColl <- context.collectionFt(collectionName)
+        objColl <- objCollectionFt
         esdOpt <- esdOptFt
         updateResult <- objColl.update(ordered=false).one(discriminator, getUpdateJson(esdOpt, event.generatedId)).map {
           case r if r.nModified == 0 => throw new ObjectUpdateNotApplied(this, discriminator)
@@ -122,14 +121,15 @@ trait ReactiveMongoObject[ObjectId, EventId, A <: EventSourced[A, EventId], D <:
 
   protected def recordEvent[E <: BaseEvent[EventId] : OWrites](event: E, parent: Option[BaseEvent[EventId]]): Future[WriteResult] = {
     for {
-      evtColl <- context.collectionFt(evtCollectionName)
+      objColl <- objCollectionFt
+      evtColl <- evtCollectionFt
       esdOpt <- esdOptFt
       result <- evtColl.insert(ordered=false).one(
         Json.toJsObject(
           EventDoc(
             _id = event.generatedId,
             _objId = id,
-            _coll = collectionName,
+            _coll = objColl.name,
             _type = event.getClass.getName,
             _created = Instant.now,
             _prev = esdOpt.map(_._cur)
@@ -142,8 +142,8 @@ trait ReactiveMongoObject[ObjectId, EventId, A <: EventSourced[A, EventId], D <:
 
   def delete[E <: BaseEvent[EventId] : OWrites](obj: D, event: E, parent: Option[BaseEvent[EventId]]): Future[A] = {
     for {
-      objColl <- collectionFt
-      evtColl <- context.collectionFt(evtCollectionName)
+      objColl <- objCollectionFt
+      evtColl <- evtCollectionFt
       esdOpt <- esdOptFt
       _ <- objColl.update(ordered=false).one(Json.obj("_id" -> Json.toJson(id)),
           esdOpt.map(_.copy(_cur = event.generatedId, _deleted = Some(Instant.now))).get
@@ -153,7 +153,7 @@ trait ReactiveMongoObject[ObjectId, EventId, A <: EventSourced[A, EventId], D <:
             EventDoc(
               _id = event.generatedId,
               _objId = id,
-              _coll = collectionName,
+              _coll = objColl.name,
               _type = event.getClass.getName,
               _created = Instant.now,
               _prev = esdOpt.map(_._cur)
@@ -166,10 +166,10 @@ trait ReactiveMongoObject[ObjectId, EventId, A <: EventSourced[A, EventId], D <:
 
   protected def purge[E <: BaseEvent[EventId] : OWrites](event: E, parent: Option[BaseEvent[EventId]]): Future[A] = {
     for {
-      coll <- collectionFt
-      evtColl <- context.collectionFt(evtCollectionName)
+      objColl <- objCollectionFt
+      evtColl <- evtCollectionFt
       esdOpt <- esdOptFt
-      result <- coll.findAndRemove(
+      result <- objColl.findAndRemove(
           selector = Json.obj("_id" -> Json.toJson(id))
         , sort = None
         , fields = None
@@ -183,7 +183,7 @@ trait ReactiveMongoObject[ObjectId, EventId, A <: EventSourced[A, EventId], D <:
           EventDoc(
             _id = event.generatedId,
             _objId = id,
-            _coll = collectionName,
+            _coll = objColl.name,
             _type = event.getClass.getName,
             _created = Instant.now,
             _prev = esdOpt.map(_._cur)
@@ -195,7 +195,7 @@ trait ReactiveMongoObject[ObjectId, EventId, A <: EventSourced[A, EventId], D <:
   }
 }
 
-object MongoObject {
+object ReactiveMongoObject {
   /**
     * Wrapper that adds type safety to a mongo \$set operation.  We need to protect (at compile time) against invoking
     * non-\$set operations with the update(json) method, the problem being that such operations will silently fail when
