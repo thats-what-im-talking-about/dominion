@@ -18,6 +18,7 @@ object Dependencies {
   //
   // ---------------------------------------------------------------------- 
   lazy val scalaVersion = "2.12.8"
-  lazy val reactiveMongoVersion = "0.16.0"
+  lazy val reactiveMongoVersion = "0.20.11"
+  lazy val typesafeConfigVersion = "1.4.0"
   lazy val playVersion = "2.6.13"
 }
