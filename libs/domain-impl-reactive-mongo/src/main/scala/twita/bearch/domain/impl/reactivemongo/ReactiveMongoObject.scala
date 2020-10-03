@@ -7,12 +7,10 @@ import reactivemongo.play.json.compat._
 import play.api.libs.json.Format
 import play.api.libs.json.JsDefined
 import play.api.libs.json.JsObject
-import play.api.libs.json.JsString
 import play.api.libs.json.Json
 import play.api.libs.json.OFormat
 import play.api.libs.json.OWrites
 import reactivemongo.api.Cursor
-import reactivemongo.api.MongoConnection
 import reactivemongo.api.ReadConcern
 import reactivemongo.api.WriteConcern
 import reactivemongo.api.commands.WriteResult
@@ -62,7 +60,6 @@ abstract class ObjectDescriptor[
   protected case class EventSourcedDoc(_cur: EventId, _init: D, _deleted: Option[Instant] = None)
   object EventSourcedDoc { implicit def fmt = Json.format[EventSourcedDoc] }
 }
-
 
 abstract class ReactiveMongoObject[EventId: Format, A <: EventSourced[A, EventId] with HasId, D <: BaseDoc[A#ObjectId]: OFormat](context: MongoContext)(
   implicit oidFormat: Format[A#ObjectId], executionContext: ExecutionContext
