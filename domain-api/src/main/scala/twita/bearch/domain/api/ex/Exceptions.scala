@@ -10,3 +10,6 @@ class ObjectDeleted[ObjectId](id: ObjectId)
 
 class ObjectUpdateNotApplied(obj: Object, discriminator: JsObject)
   extends BearchRuntimeException(s"object ${obj.getClass.getName} discriminator ${Json.prettyPrint(discriminator)}")
+
+class ObjectDoesNotMeetConstraints(q: JsObject, constraint: JsObject)
+  extends BearchRuntimeException(s"query: ${q.toString}, constraint: ${constraint.toString}")

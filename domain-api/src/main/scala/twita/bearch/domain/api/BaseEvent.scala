@@ -6,14 +6,10 @@ package twita.bearch.domain.api
   * stored as part of an event stream which can be replayed from an initial object state in order to restore a
   * particular domain object to any state that it has ever been in.
   */
-trait BaseEvent[EventId] {
-  /**
-    * Events have an inherent ability to generate an id field.  This is important for creation events, where
-    * the application issuing the event does not yet have an id because one does not yet exist for the new object.
-    * In the implementation of the object creation, the code should delegate the creation of a new id to this
-    * method which will be available on every event in the system.
-    */
-  def generateId: EventId
-
+trait BaseEvent[EventId] extends IdGenerator[EventId] {
   lazy val generatedId: EventId = generateId
+}
+
+trait IdGenerator[EventId] {
+  def generateId: EventId
 }
