@@ -9,12 +9,10 @@ import play.api.libs.json.Json
 import play.api.libs.json.OFormat
 import play.api.libs.json.OWrites
 import reactivemongo.api.WriteConcern
-import reactivemongo.api.commands.WriteResult
 import reactivemongo.play.json.collection.JSONCollection
 import reactivemongo.play.json.compat._
 import twita.bearch.domain.api.BaseEvent
-import twita.bearch.domain.api.EventSourced
-import twita.bearch.domain.api.HasId
+import twita.bearch.domain.api.DomainObject
 import twita.bearch.domain.api.ex.ObjectDeleted
 import twita.bearch.domain.api.ex.ObjectUpdateNotApplied
 
@@ -31,57 +29,7 @@ trait BaseDoc[ObjectId] {
 
 case class Empty[ObjectId](id: ObjectId)
 
-abstract class ObjectDescriptor[
-    EventId: Format
-  , A <: EventSourced[A, EventId] with HasId
-  , D <: BaseDoc[A#ObjectId]: OFormat
-](protected val context: MongoContext)(implicit oidFormat: Format[A#ObjectId], executionContext: ExecutionContext) {
-  protected def objCollectionFt: Future[JSONCollection]
-
-  protected def cons: Either[Empty[A#ObjectId], D] => A
-
-  case class EventDoc (
-      _id: EventId
-    , _objId: A#ObjectId
-    , _coll: String
-    , _type: String
-    , _created: java.time.Instant
-    , _prev: Option[EventId] = None
-  )
-  object EventDoc { implicit def fmt = Json.format[EventDoc] }
-
-  trait EventLogger {
-    def log[E <: BaseEvent[EventId]: OWrites](eventDoc: EventDoc, event: E, parent: Option[BaseEvent[EventId]]): Future[Unit]
-  }
-
-  object NoOpEventLogger extends EventLogger {
-    def log[E <: BaseEvent[EventId]: OWrites](eventDoc: EventDoc, event: E, parent: Option[BaseEvent[EventId]]): Future[Unit] = Future.successful(())
-  }
-
-  trait MongoEventLogger extends EventLogger {
-    protected def evtCollectionFt: Future[JSONCollection]
-
-    def log[E <: BaseEvent[EventId]: OWrites](eventDoc: EventDoc, event: E, parent: Option[BaseEvent[EventId]]): Future[Unit] = for {
-      evtColl <- evtCollectionFt
-      evtWriteResult <- evtColl.insert(ordered = false).one(
-        Json.toJsObject(eventDoc) ++
-        Json.toJsObject(event) ++
-        JsObject(parent.map(evt => "_parentEventId" -> Json.toJson(evt.generatedId)).toSeq)
-      )
-    } yield ()
-  }
-
-  def eventLogger: EventLogger
-
-  protected case class EventSourcedDoc(
-      _cur: EventId
-    , _init: D
-    , _deleted: Option[Instant] = None
-  )
-  object EventSourcedDoc { implicit def fmt = Json.format[EventSourcedDoc] }
-}
-
-abstract class ReactiveMongoObject[EventId: Format, A <: EventSourced[A, EventId] with HasId, D <: BaseDoc[A#ObjectId]: OFormat](context: MongoContext)(
+abstract class ReactiveMongoObject[EventId: Format, A <: DomainObject[EventId, A], D <: BaseDoc[A#ObjectId]: OFormat](context: MongoContext)(
   implicit oidFormat: Format[A#ObjectId], executionContext: ExecutionContext
 ) extends ObjectDescriptor[EventId, A, D](context)
 {
