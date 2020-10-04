@@ -23,8 +23,8 @@ abstract class ReactiveMongoDomainObjectGroup[
     EventId: Format
   , A <: DomainObject[EventId, A]
   , D <: BaseDoc[A#ObjectId]: OFormat
-](context: MongoContext)(implicit oidFormat: Format[A#ObjectId], executionContext: ExecutionContext)
-  extends ObjectDescriptor[EventId, A, D](context) with DomainObjectGroup[EventId, A]
+](implicit oidFormat: Format[A#ObjectId], executionContext: ExecutionContext)
+  extends ObjectDescriptor[EventId, A, D] with DomainObjectGroup[EventId, A]
 {
   /**
     * Hard-coded into this implementation of ReactiveMongo domain objects is the idea that we will do soft

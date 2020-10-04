@@ -8,6 +8,7 @@ import play.api.libs.json.Json
 import play.api.libs.json.OFormat
 import play.api.libs.json.OWrites
 import reactivemongo.play.json.collection.JSONCollection
+import reactivemongo.play.json.compat._
 import twita.bearch.domain.api.BaseEvent
 import twita.bearch.domain.api.DomainObject
 
@@ -19,8 +20,6 @@ import scala.concurrent.Future
   * both require an understanding of the application domain object and of the format that will be used to store
   * that object in the database.
   *
-  * @param context The MongoContext object needs to be passed to all instances of the domain object and domain
-  *                object groups.
   * @param oidFormat We need to have available to us the method by which we will be able to serialize and
   *                  deserialize the ObjectId of A, our domain object.
   * @param executionContext
@@ -32,7 +31,7 @@ abstract class ObjectDescriptor[
     EventId: Format
   , A <: DomainObject[EventId, A]
   , D <: BaseDoc[A#ObjectId]: OFormat
-](protected val context: MongoContext)(implicit oidFormat: Format[A#ObjectId], executionContext: ExecutionContext)
+](implicit oidFormat: Format[A#ObjectId], executionContext: ExecutionContext)
 {
   /**
     * @return Eventually returns the JSON collection that instances of this object will be stored in.

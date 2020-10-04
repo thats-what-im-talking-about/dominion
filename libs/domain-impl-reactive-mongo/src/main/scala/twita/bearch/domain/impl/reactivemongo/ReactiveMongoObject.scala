@@ -29,9 +29,9 @@ trait BaseDoc[ObjectId] {
 
 case class Empty[ObjectId](id: ObjectId)
 
-abstract class ReactiveMongoObject[EventId: Format, A <: DomainObject[EventId, A], D <: BaseDoc[A#ObjectId]: OFormat](context: MongoContext)(
+abstract class ReactiveMongoObject[EventId: Format, A <: DomainObject[EventId, A], D <: BaseDoc[A#ObjectId]: OFormat](
   implicit oidFormat: Format[A#ObjectId], executionContext: ExecutionContext
-) extends ObjectDescriptor[EventId, A, D](context)
+) extends ObjectDescriptor[EventId, A, D]
 {
   def id: A#ObjectId = underlying.fold(e => e.id, d => d._id)
   protected def underlying: Either[Empty[A#ObjectId], D]

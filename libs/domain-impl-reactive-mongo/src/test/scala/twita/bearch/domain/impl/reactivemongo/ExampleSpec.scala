@@ -13,11 +13,11 @@ import play.api.libs.json.JsString
 import play.api.libs.json.JsSuccess
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
-import play.api.libs.json.OFormat
 import reactivemongo.play.json.collection.JSONCollection
 import twita.bearch.domain.api.BaseEvent
 import twita.bearch.domain.api.DomainObject
 import twita.bearch.domain.api.DomainObjectGroup
+import twita.bearch.domain.api.EmptyEventFmt
 import twita.bearch.domain.api.IdGenerator
 
 import scala.concurrent.ExecutionContext
@@ -66,12 +66,7 @@ object Test {
   sealed trait Event extends BaseEvent[EventId] with EventIdGenerator
 
   case class Deleted() extends Event
-  object Deleted {
-    implicit val fmt = new OFormat[Deleted] {
-      override def reads(json: JsValue): JsResult[Deleted] = JsSuccess(Deleted())
-      override def writes(o: Deleted): JsObject = Json.obj()
-    }
-  }
+  object Deleted { implicit val fmt = EmptyEventFmt(Deleted()) }
 }
 
 trait Tests extends DomainObjectGroup[EventId, Test] {
@@ -94,15 +89,19 @@ object TestDoc { implicit val fmt = Json.format[TestDoc] }
 
 trait TestDescriptor extends ObjectDescriptor[EventId, Test, TestDoc] {
   implicit def executionContext: ExecutionContext
-  override protected def objCollectionFt: Future[JSONCollection] = context.getCollection("tests")
-  override protected def cons: Either[Empty[TestId], TestDoc] => Test = o => new MongoTest(context, o)
+  implicit def mongoContext: MongoContext
+
+  override protected def objCollectionFt: Future[JSONCollection] = mongoContext.getCollection("tests")
+  override protected def cons: Either[Empty[TestId], TestDoc] => Test = o => new MongoTest(o)
+
   override def eventLogger: EventLogger = new MongoEventLogger {
-    override protected def evtCollectionFt: Future[JSONCollection] = context.getCollection("tests.events")
+    override protected def evtCollectionFt: Future[JSONCollection] = mongoContext.getCollection("tests.events")
   }
 }
 
-class MongoTest(context: MongoContext, protected val underlying: Either[Empty[TestId], TestDoc])(implicit val executionContext: ExecutionContext)
-  extends ReactiveMongoObject[EventId, Test, TestDoc](context)
+class MongoTest(protected val underlying: Either[Empty[TestId], TestDoc])(
+  implicit val executionContext: ExecutionContext, val mongoContext: MongoContext
+) extends ReactiveMongoObject[EventId, Test, TestDoc]
     with TestDescriptor
     with Test
 {
@@ -113,8 +112,8 @@ class MongoTest(context: MongoContext, protected val underlying: Either[Empty[Te
   }
 }
 
-class MongoTests(context: MongoContext)(implicit val executionContext: ExecutionContext)
-  extends ReactiveMongoDomainObjectGroup[EventId, Test, TestDoc](context)
+class MongoTests(implicit val executionContext: ExecutionContext, val mongoContext: MongoContext)
+  extends ReactiveMongoDomainObjectGroup[EventId, Test, TestDoc]
     with TestDescriptor
     with Tests
 {
@@ -129,9 +128,10 @@ class MongoTests(context: MongoContext)(implicit val executionContext: Execution
 
 
 class ExampleSpec extends AsyncFlatSpec with should.Matchers {
+  implicit val mongoContext = new MongoContextImpl
+
   "objectGroup.create" should "insert a new object" in {
-    val context = new MongoContextImpl
-    val testGroup = new MongoTests(context)
+    val testGroup = new MongoTests
     for {
       newGroup <- testGroup(Tests.Created("foo", 2))
       confirmGroup <- testGroup.get(DomainObjectGroup.byId(newGroup.id))
@@ -140,7 +140,7 @@ class ExampleSpec extends AsyncFlatSpec with should.Matchers {
 
   "objectGroup.delete" should "delete an object" in {
     val context = new MongoContextImpl
-    val testGroup = new MongoTests(context)
+    val testGroup = new MongoTests
     for {
       tests <- testGroup.list()
       test = tests.head
