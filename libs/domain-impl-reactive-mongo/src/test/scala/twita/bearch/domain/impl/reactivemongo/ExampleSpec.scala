@@ -86,17 +86,19 @@ object Tests {
 
 // define a test mongo doc format
 case class TestDoc(
-                    _id: TestId
-                    , name: String
-                    , version: Int
-                  ) extends BaseDoc[TestId]
+    _id: TestId
+  , name: String
+  , version: Int
+) extends BaseDoc[TestId]
 object TestDoc { implicit val fmt = Json.format[TestDoc] }
 
 trait TestDescriptor extends ObjectDescriptor[EventId, Test, TestDoc] {
   implicit def executionContext: ExecutionContext
   override protected def objCollectionFt: Future[JSONCollection] = context.getCollection("tests")
-  override protected def evtCollectionFt: Future[JSONCollection] = context.getCollection("tests.events")
   override protected def cons: Either[Empty[TestId], TestDoc] => Test = o => new MongoTest(context, o)
+  override def eventLogger: EventLogger = new MongoEventLogger {
+    override protected def evtCollectionFt: Future[JSONCollection] = context.getCollection("tests.events")
+  }
 }
 
 class MongoTest(context: MongoContext, protected val underlying: Either[Empty[TestId], TestDoc])(implicit val executionContext: ExecutionContext)
@@ -118,6 +120,7 @@ class MongoTests(context: MongoContext)(implicit val executionContext: Execution
 {
   override protected def listConstraint: JsObject = Json.obj()
   override type AllowedEvent = Tests.Event
+  override def list(q: DomainObjectGroup.Query): Future[List[Test]] = ???
 
   override def apply(event: AllowedEvent, parent: Option[BaseEvent[EventId]]): Future[Test] = event match {
     case evt: Tests.Created => create(TestDoc(TestId(), evt.name, evt.version), evt, parent)
