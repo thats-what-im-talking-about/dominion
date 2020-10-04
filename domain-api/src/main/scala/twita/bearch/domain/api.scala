@@ -1,5 +1,12 @@
 package twita.bearch.domain
 
+import play.api.libs.json.JsObject
+import play.api.libs.json.JsResult
+import play.api.libs.json.JsSuccess
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json
+import play.api.libs.json.OFormat
+
 package object api {
 
   /**
@@ -17,4 +24,9 @@ package object api {
     * @tparam A The domain object type
     */
   trait DomainObject[EventId, A <: HasId] extends EventSourced[A, EventId] with HasId
+
+  case class EmptyEventFmt[E](instance: E) extends OFormat[E] {
+    override def reads(json: JsValue): JsResult[E] = JsSuccess(instance)
+    override def writes(o: E): JsObject = Json.obj()
+  }
 }
