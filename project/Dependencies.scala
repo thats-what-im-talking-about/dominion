@@ -10,7 +10,7 @@ import sbt._
 object Dependencies {
 
   lazy val organization = "twita"
-  lazy val bearchVersion = "0.1"
+  lazy val dominionVersion = "0.1"
 
   // ---------------------------------------------------------------------- 
   //
@@ -21,4 +21,5 @@ object Dependencies {
   lazy val reactiveMongoVersion = "0.20.11"
   lazy val typesafeConfigVersion = "1.4.0"
   lazy val playVersion = "2.6.13"
+  lazy val enumeratumVersion = "1.5.13"
 }

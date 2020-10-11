@@ -1,18 +1,18 @@
 import Dependencies._
 
-name := "be-arch"
-version := bearchVersion
+name := "dominion"
+version := dominionVersion
 
 publishMavenStyle := false
 
 scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation")
 
-lazy val `domain-api` = project in file("domain-api")
+lazy val api = project in file("api")
 
-lazy val `domain-impl-reactive-mongo` = (project in file("libs/domain-impl-reactive-mongo"))
-  .dependsOn(`domain-api`)
-  .aggregate(`domain-api`)
+lazy val `reactive-mongo-impl` = (project in file("libs/reactive-mongo-impl"))
+  .dependsOn(api)
+  .aggregate(api)
 
 lazy val root = (project in file("."))
-  .dependsOn(`domain-api`, `domain-impl-reactive-mongo`)
-  .aggregate(`domain-api`, `domain-impl-reactive-mongo`)
+  .dependsOn(api, `reactive-mongo-impl`)
+  .aggregate(api, `reactive-mongo-impl`)
