@@ -1,6 +1,7 @@
 import Dependencies._
 
 version := dominionVersion
+name := "dominion-reactive-mongo-impl"
 
 libraryDependencies ++= Seq(
     "org.reactivemongo" %% "reactivemongo" % reactiveMongoVersion

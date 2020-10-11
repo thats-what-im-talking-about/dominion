@@ -1,7 +1,8 @@
 import Dependencies._
 
+ThisBuild / organization := "twita"
+ThisBuild / version := dominionVersion
 name := "dominion"
-version := dominionVersion
 
 publishMavenStyle := false
 

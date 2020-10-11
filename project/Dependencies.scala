@@ -8,10 +8,7 @@ import sbt._
  * https://www.scala-sbt.org/1.x/docs/Organizing-Build.html
  */
 object Dependencies {
-
-  lazy val organization = "twita"
-  lazy val dominionVersion = "0.1"
-
+  lazy val dominionVersion = "0.1.0"
   // ---------------------------------------------------------------------- 
   //
   //        V   E   R   S   I   O   N   S
