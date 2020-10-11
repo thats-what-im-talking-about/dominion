@@ -23,9 +23,9 @@ import scala.concurrent.Future
   * @param oidFormat We need to have available to us the method by which we will be able to serialize and
   *                  deserialize the ObjectId of A, our domain object.
   * @param executionContext
-  * @tparam EventId The type or the unique ids for the events that will be applied to this object.
+  * @tparam EventId The type of the unique ids for the events that will be applied to this object.
   * @tparam A The application domain object type.
-  * @tparam D The representation of A that will be stored in Mongo.
+  * @tparam D The case class representation of A that will be stored in Mongo.
   */
 abstract class ObjectDescriptor[
     EventId: Format
@@ -33,6 +33,8 @@ abstract class ObjectDescriptor[
   , D <: BaseDoc[A#ObjectId]: OFormat
 ](implicit oidFormat: Format[A#ObjectId], executionContext: ExecutionContext)
 {
+  type AllowedEvent <: BaseEvent[EventId]
+
   /**
     * @return Eventually returns the JSON collection that instances of this object will be stored in.
     */
@@ -60,7 +62,25 @@ abstract class ObjectDescriptor[
   )
   object EventSourcedDoc { implicit def fmt = Json.format[EventSourcedDoc] }
 
-  case class EventDoc (
+  /*
+   *                   E   V   E   N   T       L   O   G   G   I   N   G
+   *
+   * Everything from here on is in support of event logging functionality.  Implementers may choose to also define
+   * their own EventLogger instances in an application specific extension of ObjectDescriptor.  By default, the
+   * NoOpEventLogger will be put in place.
+   */
+
+  /**
+    * Default internal fields that are part of every event that is logged in the system.
+    * @param _id unique ID for this event.
+    * @param _objId the unique id of the D instance that is being manipulated.
+    * @param _coll the name of the collection that is being specified by this ObjectDescriptor.
+    * @param _type the fully qualified class name of the event being processed.
+    * @param _created timestamp of when the event was created.
+    * @param _prev the _id value for the event that came before this one (can be used to string the events together
+    *              to get an idea of the sequence of operations performed against a particular domain object).
+    */
+  case class EventMetaData(
       _id: EventId
     , _objId: A#ObjectId
     , _coll: String
@@ -68,20 +88,43 @@ abstract class ObjectDescriptor[
     , _created: java.time.Instant
     , _prev: Option[EventId] = None
   )
-  object EventDoc { implicit def fmt = Json.format[EventDoc] }
+  object EventMetaData { implicit def fmt = Json.format[EventMetaData] }
 
+  /**
+    * Simple interface that defines the interface that will be used to log events against this domain object.
+    */
   trait EventLogger {
-    def log[E <: BaseEvent[EventId]: OWrites](eventDoc: EventDoc, event: E, parent: Option[BaseEvent[EventId]]): Future[Unit]
+    /**
+      * Contract for logging events applied to this {{ObjectDescriptor}}
+      * @param eventMetaData EventMetaData instance that describes the metadata about this event.
+      * @param event The actual event instance that was applied to this {{ObjectDescriptor}}.
+      * @param parent
+      * @tparam E
+      * @return
+      */
+    def log[E <: AllowedEvent: OWrites](eventMetaData: EventMetaData, event: E, parent: Option[BaseEvent[EventId]]): Future[Unit]
   }
+
+  /**
+    * @return The EventLogger instance to be used with this object.  By default, we will return a {{NoOpEventLogger}},
+    *         but there are a couple of others defined in this class and implementers may choose to implement their
+    *         own as well.
+    */
+  def eventLogger: EventLogger = NoOpEventLogger
 
   object NoOpEventLogger extends EventLogger {
-    def log[E <: BaseEvent[EventId]: OWrites](eventDoc: EventDoc, event: E, parent: Option[BaseEvent[EventId]]): Future[Unit] = Future.successful(())
+    def log[E <: AllowedEvent: OWrites](eventDoc: EventMetaData, event: E, parent: Option[BaseEvent[EventId]]): Future[Unit] = Future.successful(())
   }
 
+  /**
+    * Logs all of the events that are applied to this object into an implementation-provided JSONCollection.  It is
+    * up to the implementer whether these events all get saved to one collection or if there are per-module or even
+    * per domain object event collections.
+    */
   trait MongoEventLogger extends EventLogger {
     protected def evtCollectionFt: Future[JSONCollection]
 
-    def log[E <: BaseEvent[EventId]: OWrites](eventDoc: EventDoc, event: E, parent: Option[BaseEvent[EventId]]): Future[Unit] = for {
+    def log[E <: AllowedEvent: OWrites](eventDoc: EventMetaData, event: E, parent: Option[BaseEvent[EventId]]): Future[Unit] = for {
       evtColl <- evtCollectionFt
       evtWriteResult <- evtColl.insert(ordered = false).one(
         Json.toJsObject(eventDoc) ++
@@ -91,6 +134,17 @@ abstract class ObjectDescriptor[
     } yield ()
   }
 
-  def eventLogger: EventLogger
-}
+  class MongoObjectEventStackLogger(depth: Int) extends EventLogger {
+    case class EventStack(_eventStack: Option[List[EventMetaData]] = None)
+    object EventStack { implicit val fmt = Json.format[EventStack] }
 
+    override def log[E <: AllowedEvent: OWrites](eventDoc: EventMetaData, event: E, parent: Option[BaseEvent[EventId]]): Future[Unit] = {
+      for {
+        objColl <- objCollectionFt
+        obj <- objColl.find(Json.obj("_id" -> eventDoc._objId), Some(Json.obj("_eventStack" -> 1))).one[EventStack]
+        newEventStack = (eventDoc +: obj.map(_._eventStack.getOrElse(List.empty)).getOrElse(List.empty)).take(depth)
+        writeResult <- objColl.update(ordered=false).one(Json.obj("_id" -> eventDoc._objId), Json.obj("$set" -> Json.toJsObject(EventStack(_eventStack = Some(newEventStack)))))
+      } yield ()
+    }
+  }
+}

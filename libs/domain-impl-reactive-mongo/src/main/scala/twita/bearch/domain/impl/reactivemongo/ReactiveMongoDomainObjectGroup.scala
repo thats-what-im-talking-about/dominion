@@ -148,19 +148,19 @@ abstract class ReactiveMongoDomainObjectGroup[
     )
   } yield count
 
-  protected def create[E <: BaseEvent[EventId]](obj: D, event: E, parent: Option[BaseEvent[EventId]])(implicit writes: OWrites[E]): Future[A] = {
+  protected def create[E <: AllowedEvent](obj: D, event: E, parent: Option[BaseEvent[EventId]])(implicit writes: OWrites[E]): Future[A] = {
     for {
       objColl <- objCollectionFt
-      evtDoc = EventDoc(event.generatedId, obj._id, objColl.name, event.getClass.getName, Instant.now)
+      evtDoc = EventMetaData(event.generatedId, obj._id, objColl.name, event.getClass.getName, Instant.now)
       objWriteResult <- objColl.insert(ordered=false).one(Json.toJsObject(obj) ++ Json.toJsObject(EventSourcedDoc(evtDoc._id, obj)))
       evtLogResult <- eventLogger.log(evtDoc, event, parent)
     } yield cons(Right(obj))
   }
 
-  protected def upsert[E <: BaseEvent[EventId]](obj: D, event: E, parent: Option[BaseEvent[EventId]])(implicit writes: OWrites[E]): Future[A] = {
+  protected def upsert[E <: AllowedEvent](obj: D, event: E, parent: Option[BaseEvent[EventId]])(implicit writes: OWrites[E]): Future[A] = {
     for {
       objColl <- objCollectionFt
-      evtDoc = EventDoc(event.generatedId, obj._id, objColl.name, event.getClass.getName, Instant.now)
+      evtDoc = EventMetaData(event.generatedId, obj._id, objColl.name, event.getClass.getName, Instant.now)
       objWriteResult <- objColl.update(ordered=false).one(
           Json.obj("_id" -> Json.toJson(obj._id)),
           Json.obj("$set" -> (Json.toJsObject(obj) ++ Json.toJsObject(EventSourcedDoc(evtDoc._id, obj)))), upsert = true

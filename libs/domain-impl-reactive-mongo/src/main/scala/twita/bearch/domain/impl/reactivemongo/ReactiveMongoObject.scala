@@ -41,19 +41,19 @@ abstract class ReactiveMongoObject[EventId: Format, A <: DomainObject[EventId, A
 
   def initialState: Future[A] = esdOptFt.map(esdOpt => cons(Right(esdOpt.get._init)))
 
-  def update[E <: A#AllowedEvent : OWrites](
+  def update[E <: AllowedEvent : OWrites](
       obj: D
     , event: E
     , parent: Option[BaseEvent[EventId]]
   ): Future[A] = update(ReactiveMongoObject.SetOp(Json.toJsObject(obj)), event, parent)
 
-  def update[E <: A#AllowedEvent : OWrites](
+  def update[E <: AllowedEvent : OWrites](
       update: ReactiveMongoObject.SetOp
     , event: E
     , parent: Option[BaseEvent[EventId]]
   ): Future[A] = updateVerbose(Json.obj("$set" -> update.json), event, parent)
 
-  def updateVerbose[E <: A#AllowedEvent : OWrites](
+  def updateVerbose[E <: AllowedEvent : OWrites](
       update: JsObject
     , event: E
     , parent: Option[BaseEvent[EventId]]
@@ -73,7 +73,7 @@ abstract class ReactiveMongoObject[EventId: Format, A <: DomainObject[EventId, A
       for {
         objColl <- objCollectionFt
         esdOpt <- esdOptFt
-        eventDoc = EventDoc(
+        eventDoc = EventMetaData(
             _id = event.generatedId
           , _objId = id
           , _coll = objColl.name
@@ -103,11 +103,11 @@ abstract class ReactiveMongoObject[EventId: Format, A <: DomainObject[EventId, A
     }*/
   }
 
-  def delete[E <: BaseEvent[EventId] : OWrites](obj: D, event: E, parent: Option[BaseEvent[EventId]]): Future[A] = {
+  def delete[E <: AllowedEvent : OWrites](obj: D, event: E, parent: Option[BaseEvent[EventId]]): Future[A] = {
     for {
       objColl <- objCollectionFt
       esdOpt <- esdOptFt
-      eventDoc = EventDoc(
+      eventDoc = EventMetaData(
           _id = event.generatedId
         , _objId = id
         , _coll = objColl.name
@@ -122,11 +122,11 @@ abstract class ReactiveMongoObject[EventId: Format, A <: DomainObject[EventId, A
     } yield cons(Left(Empty(id)))
   }
 
-  protected def purge[E <: BaseEvent[EventId] : OWrites](event: E, parent: Option[BaseEvent[EventId]]): Future[A] = {
+  protected def purge[E <: AllowedEvent : OWrites](event: E, parent: Option[BaseEvent[EventId]]): Future[A] = {
     for {
       objColl <- objCollectionFt
       esdOpt <- esdOptFt
-      eventDoc = EventDoc(
+      eventDoc = EventMetaData(
           _id = event.generatedId
         , _objId = id
         , _coll = objColl.name

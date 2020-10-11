@@ -11,6 +11,8 @@ lazy val `domain-api` = project in file("domain-api")
 
 lazy val `domain-impl-reactive-mongo` = (project in file("libs/domain-impl-reactive-mongo"))
   .dependsOn(`domain-api`)
+  .aggregate(`domain-api`)
 
 lazy val root = (project in file("."))
   .dependsOn(`domain-api`, `domain-impl-reactive-mongo`)
+  .aggregate(`domain-api`, `domain-impl-reactive-mongo`)
