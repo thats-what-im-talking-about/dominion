@@ -142,7 +142,7 @@ abstract class ObjectDescriptor[
       for {
         objColl <- objCollectionFt
         obj <- objColl.find(Json.obj("_id" -> eventDoc._objId), Some(Json.obj("_eventStack" -> 1))).one[EventStack]
-        eventJson = Json.toJsObject(EventMetaData) ++ Json.toJsObject(event)
+        eventJson = Json.toJsObject(eventDoc) ++ Json.toJsObject(event)
         newEventStack = (eventJson +: obj.map(_._eventStack.getOrElse(List.empty)).getOrElse(List.empty)).take(depth)
         writeResult <- objColl.update(ordered=false).one(
             Json.obj("_id" -> eventDoc._objId)
