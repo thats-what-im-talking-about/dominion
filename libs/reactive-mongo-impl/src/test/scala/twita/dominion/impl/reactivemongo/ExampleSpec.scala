@@ -90,7 +90,6 @@ package impl {
   object TestDoc { implicit val fmt = Json.format[TestDoc] }
 
   trait TestDescriptor extends ObjectDescriptor[EventId, api.Test, TestDoc] {
-    implicit def executionContext: ExecutionContext
     implicit def mongoContext: MongoContext
 
     override protected def objCollectionFt: Future[JSONCollection] = mongoContext.getCollection("tests")
@@ -99,7 +98,7 @@ package impl {
   }
 
   class MongoTest(protected val underlying: Either[Empty[TestId], TestDoc])(
-    implicit val executionContext: ExecutionContext, val mongoContext: MongoContext
+      implicit executionContext: ExecutionContext, override val mongoContext: MongoContext
   ) extends ReactiveMongoObject[EventId, api.Test, TestDoc]
       with TestDescriptor
       with api.Test
@@ -111,7 +110,7 @@ package impl {
     }
   }
 
-  class MongoTests(implicit val executionContext: ExecutionContext, val mongoContext: MongoContext)
+  class MongoTests(implicit executionContext: ExecutionContext, val mongoContext: MongoContext)
     extends ReactiveMongoDomainObjectGroup[EventId, api.Test, TestDoc]
       with TestDescriptor
       with api.Tests

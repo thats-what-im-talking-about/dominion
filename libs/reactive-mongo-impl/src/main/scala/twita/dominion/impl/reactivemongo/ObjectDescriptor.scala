@@ -31,7 +31,7 @@ abstract class ObjectDescriptor[
     EventId: Format
   , A <: DomainObject[EventId, A]
   , D <: BaseDoc[A#ObjectId]: OFormat
-](implicit oidFormat: Format[A#ObjectId], executionContext: ExecutionContext)
+](implicit oidFormat: Format[A#ObjectId], val executionContext: ExecutionContext)
 {
   type AllowedEvent <: BaseEvent[EventId]
 
@@ -135,15 +135,18 @@ abstract class ObjectDescriptor[
   }
 
   class MongoObjectEventStackLogger(depth: Int) extends EventLogger {
-    case class EventStack(_eventStack: Option[List[EventMetaData]] = None)
+    case class EventStack(_eventStack: Option[List[JsObject]] = None)
     object EventStack { implicit val fmt = Json.format[EventStack] }
 
     override def log[E <: AllowedEvent: OWrites](eventDoc: EventMetaData, event: E, parent: Option[BaseEvent[EventId]]): Future[Unit] = {
       for {
         objColl <- objCollectionFt
         obj <- objColl.find(Json.obj("_id" -> eventDoc._objId), Some(Json.obj("_eventStack" -> 1))).one[EventStack]
-        newEventStack = (eventDoc +: obj.map(_._eventStack.getOrElse(List.empty)).getOrElse(List.empty)).take(depth)
-        writeResult <- objColl.update(ordered=false).one(Json.obj("_id" -> eventDoc._objId), Json.obj("$set" -> Json.toJsObject(EventStack(_eventStack = Some(newEventStack)))))
+        eventJson = Json.toJsObject(EventMetaData) ++ Json.toJsObject(event)
+        newEventStack = (eventJson +: obj.map(_._eventStack.getOrElse(List.empty)).getOrElse(List.empty)).take(depth)
+        writeResult <- objColl.update(ordered=false).one(
+            Json.obj("_id" -> eventDoc._objId)
+          , Json.obj("$set" -> Json.toJsObject(EventStack(_eventStack = Some(newEventStack)))))
       } yield ()
     }
   }

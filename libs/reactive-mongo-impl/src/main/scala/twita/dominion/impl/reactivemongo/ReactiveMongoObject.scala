@@ -33,8 +33,8 @@ abstract class ReactiveMongoObject[EventId: Format, A <: DomainObject[EventId, A
   implicit oidFormat: Format[A#ObjectId], executionContext: ExecutionContext
 ) extends ObjectDescriptor[EventId, A, D]
 {
-  def id: A#ObjectId = underlying.fold(e => e.id, d => d._id)
   protected def underlying: Either[Empty[A#ObjectId], D]
+  def id: A#ObjectId = underlying.fold(e => e.id, d => d._id)
   protected lazy val obj: D = underlying.right.getOrElse(throw new ObjectDeleted(id))
   protected lazy val esdOptFt: Future[Option[EventSourcedDoc]] =
     objCollectionFt.flatMap(_.find(Json.obj("_id" -> Json.toJson(id)), projection = Some(Json.obj())).one[EventSourcedDoc])
