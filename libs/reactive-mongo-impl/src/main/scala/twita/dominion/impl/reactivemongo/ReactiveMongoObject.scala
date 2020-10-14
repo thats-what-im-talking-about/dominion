@@ -19,10 +19,6 @@ import twita.dominion.api.ex.ObjectUpdateNotApplied
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-trait MongoContext {
-  def getCollection(name: String): Future[JSONCollection]
-}
-
 trait BaseDoc[ObjectId] {
   def _id: ObjectId
 }

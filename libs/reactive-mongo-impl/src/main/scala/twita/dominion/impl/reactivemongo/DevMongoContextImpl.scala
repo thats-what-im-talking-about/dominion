@@ -6,8 +6,11 @@ import reactivemongo.play.json.collection.JSONCollection
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-class MongoContextImpl(implicit executionContext: ExecutionContext) extends MongoContext {
-  def collLookup(str: String) = "bearch"
+/**
+  * Extremely simple MongoContext that puts all collections into a database called `dev` that lives on `localhost`
+  */
+class DevMongoContextImpl(implicit executionContext: ExecutionContext) extends MongoContext {
+  def collLookup(str: String) = "dev"
 
   override def getCollection(name: String): Future[JSONCollection] = {
     for {

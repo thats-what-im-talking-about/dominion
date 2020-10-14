@@ -127,7 +127,7 @@ package impl {
 
 
 class ExampleSpec extends AsyncFlatSpec with should.Matchers {
-  implicit val mongoContext = new MongoContextImpl
+  implicit val mongoContext = new DevMongoContextImpl
 
   "objectGroup.create" should "insert a new object" in {
     val testGroup: api.Tests = new impl.MongoTests
