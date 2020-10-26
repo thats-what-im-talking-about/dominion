@@ -134,10 +134,15 @@ abstract class ObjectDescriptor[
     } yield ()
   }
 
+  /**
+    * Logs all of the events that occur against a certain object in an internal field stored directly on that object.
+    * This is useful for situations where you want to be able to investigate how an individual object in the domain
+    * got to be in the state that it currently is in.
+    *
+    * @param depth The number of events to maintain on the stack.  This is here just to prevent the event stack from
+    *              growing extremely large and outgrowing the maximum size of a document.
+    */
   class MongoObjectEventStackLogger(depth: Int) extends EventLogger {
-    case class EventStack(_eventStack: Option[List[JsObject]] = None)
-    object EventStack { implicit val fmt = Json.format[EventStack] }
-
     override def log[E <: AllowedEvent: OWrites](eventDoc: EventMetaData, event: E, parent: Option[BaseEvent[EventId]]): Future[Unit] = {
       for {
         objColl <- objCollectionFt
