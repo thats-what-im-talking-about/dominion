@@ -7,6 +7,9 @@ import play.api.libs.json.JsObject
 import play.api.libs.json.Json
 import play.api.libs.json.OFormat
 import play.api.libs.json.OWrites
+import reactivemongo.api.bson.collection.BSONSerializationPack
+import reactivemongo.api.indexes.Index
+import reactivemongo.api.indexes.IndexType
 import reactivemongo.play.json.collection.JSONCollection
 import reactivemongo.play.json.compat._
 import twita.dominion.api.BaseEvent
@@ -154,4 +157,36 @@ abstract class ObjectDescriptor[
       } yield ()
     }
   }
+}
+
+object ObjectDescriptor {
+  def index(
+      key: Seq[(String, IndexType)]
+    , name: Option[String] = None
+    , unique: Boolean = false
+    , sparse: Boolean = false
+  ) = Index(BSONSerializationPack)(
+      key = key
+    , name = name
+    , unique = unique
+    , background = false
+    , dropDups = false
+    , sparse = sparse
+    , expireAfterSeconds = None
+    , storageEngine = None
+    , weights = None
+    , defaultLanguage = None
+    , languageOverride = None
+    , textIndexVersion = None
+    , sphereIndexVersion = None
+    , bits = None
+    , min = None
+    , max = None
+    , bucketSize = None
+    , collation = None
+    , wildcardProjection = None
+    , version = None
+    , partialFilter = None
+    , options = Json.obj()
+  )
 }
