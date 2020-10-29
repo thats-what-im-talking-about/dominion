@@ -48,7 +48,7 @@ abstract class ObjectDescriptor[
   protected final val objCollectionFt: Future[JSONCollection] = {
     for {
       coll <- mongoContext.getCollection(collectionName)
-      result <- ensureIndexes(coll) if result
+      result <- ensureIndexes(coll)
     } yield coll
   }
 
