@@ -92,7 +92,7 @@ package impl {
   trait TestDescriptor extends ObjectDescriptor[EventId, api.Test, TestDoc] {
     implicit def mongoContext: MongoContext
 
-    override protected def objCollectionFt: Future[JSONCollection] = mongoContext.getCollection("tests")
+    override protected lazy val collectionName = "tests"
     override protected def cons: Either[Empty[TestId], TestDoc] => api.Test = o => new MongoTest(o)
     override def eventLogger: EventLogger = new MongoObjectEventStackLogger(4)
   }

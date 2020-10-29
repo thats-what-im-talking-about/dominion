@@ -38,10 +38,28 @@ abstract class ObjectDescriptor[
 {
   type AllowedEvent <: BaseEvent[EventId]
 
+  protected def collectionName: String
+
+  protected def mongoContext: MongoContext
+
   /**
     * @return Eventually returns the JSON collection that instances of this object will be stored in.
     */
-  protected def objCollectionFt: Future[JSONCollection]
+  protected final val objCollectionFt: Future[JSONCollection] = {
+    for {
+      coll <- mongoContext.getCollection(collectionName)
+      result <- ensureIndexes(coll) if result
+    } yield coll
+  }
+
+  /**
+    * Domain objects may override this method to ensure that the proper indexes have been added to this
+    * object's collection.
+    *
+    * @param coll The Mongo JSON collection to add the indexes to.
+    * @return Eventually, true if adding the indexes was successful.
+    */
+  protected def ensureIndexes(coll: JSONCollection) = Future.successful(true)
 
   /**
     * @return function that can be used to construct an A given an Empty or a D.  This function is used to return the
