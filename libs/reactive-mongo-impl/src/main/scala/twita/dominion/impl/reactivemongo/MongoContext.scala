@@ -2,6 +2,7 @@ package twita.dominion.impl.reactivemongo
 
 import reactivemongo.play.json.collection.JSONCollection
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 /**
@@ -13,6 +14,6 @@ trait MongoContext {
     * @param name Name of the collection you're looking for.
     * @return eventually returns a JSONCollection interface that may be used to access your data.
     */
-  def getCollection(name: String): Future[JSONCollection]
+  def getCollection(name: String)(implicit executionContext: ExecutionContext): Future[JSONCollection]
 }
 

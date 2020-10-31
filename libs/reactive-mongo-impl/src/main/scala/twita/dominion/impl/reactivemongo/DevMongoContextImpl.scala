@@ -9,10 +9,10 @@ import scala.concurrent.Future
 /**
   * Extremely simple MongoContext that puts all collections into a database called `dev` that lives on `localhost`
   */
-class DevMongoContextImpl(implicit executionContext: ExecutionContext) extends MongoContext {
+class DevMongoContextImpl extends MongoContext {
   def collLookup(str: String) = "dev"
 
-  override def getCollection(name: String): Future[JSONCollection] = {
+  override def getCollection(name: String)(implicit executionContext: ExecutionContext): Future[JSONCollection] = {
     for {
       conn <- dbConn
       db <- conn.database(collLookup(name))
