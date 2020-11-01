@@ -1,5 +1,10 @@
 package twita.dominion.api
 
+import akka.stream.Materializer
+import akka.stream.scaladsl.Source
+import play.api.libs.json.JsObject
+import play.api.libs.json.Json
+
 import scala.concurrent.Future
 
 /**
@@ -28,6 +33,8 @@ trait DomainObjectGroup[EventId, A <: HasId] extends EventSourced[A, EventId] {
   def list: Future[List[A]]
 
   def list(q: DomainObjectGroup.Query): Future[List[A]]
+
+  def source()(implicit m: Materializer): Future[Source[A, Any]]
 
   /**
     * Same as the {{list}} method, this method is here to provide a way to just find the number of items in

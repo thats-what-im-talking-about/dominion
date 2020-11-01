@@ -2,11 +2,14 @@ package twita.dominion.impl.reactivemongo
 
 import java.time.Instant
 
+import akka.stream.Materializer
+import akka.stream.scaladsl.Source
 import play.api.libs.json.Format
 import play.api.libs.json.JsObject
 import play.api.libs.json.Json
 import play.api.libs.json.OFormat
 import play.api.libs.json.OWrites
+import reactivemongo.akkastream.cursorProducer
 import reactivemongo.api.Cursor
 import reactivemongo.api.ReadConcern
 import reactivemongo.play.json.collection.JSONCollection
@@ -147,6 +150,18 @@ abstract class ReactiveMongoDomainObjectGroup[
       , readConcern = ReadConcern.Available
     )
   } yield count
+
+  def source()(implicit m: Materializer): Future[Source[A, Any]] = source(listConstraint)
+
+  def source(q: JsObject)(implicit m: Materializer): Future[Source[A, Any]] = for {
+    coll <- objCollectionFt
+  } yield {
+    coll.find(q ++ notDeletedConstraint, projection = Some(Json.obj()))
+      .sort(defaultOrder)
+      .cursor[D]()
+      .documentSource()
+      .map(doc => cons(Right(doc)))
+  }
 
   protected def create[E <: AllowedEvent](obj: D, event: E, parent: Option[BaseEvent[EventId]])(implicit writes: OWrites[E]): Future[A] = {
     for {

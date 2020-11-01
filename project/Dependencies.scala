@@ -19,4 +19,5 @@ object Dependencies {
   lazy val typesafeConfigVersion = "1.4.0"
   lazy val playVersion = "2.6.13"
   lazy val enumeratumVersion = "1.5.13"
+  lazy val akkaVersion = "2.6.10"
 }

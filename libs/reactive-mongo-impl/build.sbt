@@ -7,6 +7,7 @@ libraryDependencies ++= Seq(
     "org.reactivemongo" %% "reactivemongo" % reactiveMongoVersion
   , "org.reactivemongo" %% "play2-reactivemongo" % s"${reactiveMongoVersion}-play26"
   , "org.reactivemongo" %% "reactivemongo-play-json-compat" % s"${reactiveMongoVersion}-play26"
+  , "org.reactivemongo" %% "reactivemongo-akkastream" % reactiveMongoVersion
   , "com.typesafe.play" %% "play-json" % playVersion
   , "org.scalactic" %% "scalactic" % "3.2.0"
   , "org.scalatest" %% "scalatest" % "3.2.0" % "test"
