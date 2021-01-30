@@ -1,7 +1,7 @@
 # dominion
 
 The dominion library is a very thin layer of base classes that provide
-the basic framework for defining Domain Objects for you application in
+the basic framework for defining Domain Objects for your application in
 Scala.  The main idea behind this library is to encourage the separation
 of the declarative definition of your Domain from the more imperative
 task of retrieve, mutating, and persisting the objects.  As such, you
