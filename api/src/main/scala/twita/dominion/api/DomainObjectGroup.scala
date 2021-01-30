@@ -24,7 +24,7 @@ trait DomainObjectGroup[EventId, A <: HasId] extends EventSourced[A, EventId] {
     * This method is used to get the list of domain objects that are in this particular group.  This is
     * not supposed to be a simple "SELECT * FROM table" query though; the idea is that a domain object
     * group can be defined as a property of another domain object, and the underlying implemenetation
-    * is able to provide a constraint (or, in our SELECT * FROM table example, a WHERE clause) to limint
+    * is able to provide a constraint (or, in our SELECT * FROM table example, a WHERE clause) to limit
     * the amount of items in this list.  Note that if the data set gets large, this method will return
     * the entire materialized list of items which could get big.
     *
