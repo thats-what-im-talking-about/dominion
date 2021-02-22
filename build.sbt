@@ -8,6 +8,8 @@ publishMavenStyle := false
 
 scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation")
 
+scalaVersion := scalaVsn
+
 lazy val api = project in file("api")
 
 lazy val `reactive-mongo-impl` = (project in file("libs/reactive-mongo-impl"))
