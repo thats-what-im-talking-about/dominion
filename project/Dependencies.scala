@@ -18,6 +18,7 @@ object Dependencies {
   lazy val reactiveMongoVersion = "0.20.11"
   lazy val typesafeConfigVersion = "1.4.0"
   lazy val playVersion = "2.7.4"
-  lazy val enumeratumVersion = "1.6.1"
+  lazy val enumeratumVersion = "1.5.13"
+  lazy val enumeratumJsonVersion = "1.5.16"
   lazy val akkaVersion = "2.6.10"
 }
