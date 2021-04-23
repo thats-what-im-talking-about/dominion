@@ -29,7 +29,7 @@ root / publish / skip := true
 
 inThisBuild(List(
   organization := "io.github.thats-what-im-talking-about",
-  homepage := Some(url("http://gihub.com/thats-what-im-talking-about"))
+  homepage := Some(url("http://gihub.com/thats-what-im-talking-about")),
   licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   developers := List(
     Developer(
