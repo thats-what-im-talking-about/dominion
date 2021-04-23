@@ -1,6 +1,5 @@
 import Dependencies._
 
-ThisBuild / version := dominionVersion
 name := "dominion"
 
 publishMavenStyle := false
@@ -28,9 +27,19 @@ root / publish / skip := true
 //      P   U   B   L   I   S   H   I   N   G
 //
 
-ThisBuild / organization := "io.github.thats-what-im-talking-about"
-ThisBuild / organizationName := "TWITA"
-ThisBuild / organizationHomepage := Some(url("http://gihub.com/thats-what-im-talking-about"))
+inThisBuild(List(
+  organization := "io.github.thats-what-im-talking-about",
+  homepage := Some(url("http://gihub.com/thats-what-im-talking-about"))
+  licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+  developers := List(
+    Developer(
+      "bplawler",
+      "Brian Lawler",
+      "bplawler@gmail.com",
+      url("https://github.com/bplawler")
+    )
+  )
+))
 
 ThisBuild / scmInfo := Some(
   ScmInfo(
@@ -48,15 +57,7 @@ ThisBuild / developers := List(
 )
 
 ThisBuild / description := "Scala-based Domain Object framework."
-ThisBuild / licenses := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 ThisBuild / homepage := Some(url("https://github.com/thats-what-im-talking-about/dominion"))
 
 // Remove all additional repository other than Maven Central from POM
 ThisBuild / pomIncludeRepository := { _ => false }
-ThisBuild / publishTo := {
-  val nexus = "https://s01.oss.sonatype.org/"
-  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
-}
-ThisBuild / publishMavenStyle := true
-
