@@ -27,6 +27,9 @@ root / publish / skip := true
 //      P   U   B   L   I   S   H   I   N   G
 //
 
+sonatypeCredentialHost := "s01.oss.sonatype.org"
+sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
+
 inThisBuild(List(
   organization := "io.github.thats-what-im-talking-about",
   homepage := Some(url("http://gihub.com/thats-what-im-talking-about")),

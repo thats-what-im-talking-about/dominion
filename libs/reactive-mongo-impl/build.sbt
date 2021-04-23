@@ -1,7 +1,7 @@
 import Dependencies._
 
 scalaVersion := scalaVsn
-version := dominionVersion
+
 name := "dominion-reactive-mongo-impl"
 
 libraryDependencies ++= Seq(
