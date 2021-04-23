@@ -40,24 +40,3 @@ inThisBuild(List(
     )
   )
 ))
-
-ThisBuild / scmInfo := Some(
-  ScmInfo(
-    url("https://github.com/thats-what-im-talking-about/dominion"),
-    "scm:git@github.com:thats-what-im-talking-about/dominion.git"
-  )
-)
-ThisBuild / developers := List(
-  Developer(
-    id    = "bplawler",
-    name  = "Brian Lawler",
-    email = "bplawler@gmail.com",
-    url   = url("https://github.com/bplawler")
-  )
-)
-
-ThisBuild / description := "Scala-based Domain Object framework."
-ThisBuild / homepage := Some(url("https://github.com/thats-what-im-talking-about/dominion"))
-
-// Remove all additional repository other than Maven Central from POM
-ThisBuild / pomIncludeRepository := { _ => false }
