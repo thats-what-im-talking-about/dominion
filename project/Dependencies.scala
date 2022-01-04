@@ -17,8 +17,8 @@ object Dependencies {
   lazy val scalaVsn = "2.13.2"
   lazy val reactiveMongoVersion = "0.20.11"
   lazy val typesafeConfigVersion = "1.4.0"
-  lazy val playVersion = "2.7.4"
-  lazy val enumeratumVersion = "1.5.13"
-  lazy val enumeratumJsonVersion = "1.5.16"
+  lazy val playVersion = "2.8.2"
+  lazy val enumeratumVersion = "1.7.0"
+  lazy val enumeratumJsonVersion = "1.7.0"
   lazy val akkaVersion = "2.6.10"
 }
